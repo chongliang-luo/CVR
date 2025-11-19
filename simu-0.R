@@ -22,21 +22,28 @@ X2 <- mydata$X2
 Xlist <- list(X1 = X1, X2 = X2); 
 Y <- mydata$y[,1]
 event = mydata$y[,2]
-## fix rank = 4, tune eta and lambda   
-n = 400
-# CVR fit, fix rank = 4, tune eta and lambda 
+Ytest=mydata$ytest[,1]
+X1test=mydata$X1test 
+X2test=mydata$X2test 
+eventtest=mydata$ytest[,2]
+ 
+## CVR fit, fix rank = 4, tune eta and lambda 
 out_cvr <- CVR(Y, Xlist, event=event, rankseq= 4, neta= 5, nlam = 25, family = "cox", nfold = 5)
 # out_cvr$solution$W[[1]]
 ff = out_cvr$cvout$cvr.fit # refit
+round(cor(X1 %*% ff$W[[1]], X2 %*% ff$W[[2]]), 2)
 
-# predict test data, output Uno' concordance  
+# predict test data, output Uno's concordance 
 pred1 = PredCVR(mydata$ytest[,1], mydata$X1test, mydata$X2test, mydata$ytest[,2], 
                 ff$W[[1]], ff$W[[2]], alpha = ff$alpha, beta =ff$beta, 
                 Y=mydata$y[,1], X1=mydata$X1, X2=mydata$X2, event=mydata$y[,2], 
                 family = "cox", refit = T, combine = T, type.measure = 'UnoC')
+pred1 # 0.846
 
-
-
+# individual prediction:
+# linear predictor (rank): ff$alpha + (X1test %*% ff$W[[1]], X2test %*% ff$W[[2]]) * ff$beta 
+# also need to estimate baseline haz
+ 
 ########## X1 X2 have common+individual canonical variates, both predict Y 
 set.seed(42)   
 n = 400
@@ -74,10 +81,6 @@ pred1 = PredCVR(dd0$ytest[,1], dd0$X1test, dd0$X2test, dd0$ytest[,2],
 source("R/scvr-engine.R")
 
 offsetk=list(W1k=NULL, W2k=NULL, beta1k=NULL, beta2k=NULL) 
-Ytest=mydata$ytest[,1]
-X1test=mydata$X1test 
-X2test=mydata$X2test 
-eventtest=mydata$ytest[,2]
 
 # sCVR fit: 1st layer, tune eta and lambda
 seq1 = TuneCVR_seq(Y, X1, X2, event, offsetk = offsetk, etaseq=seq(0.1,0.5,0.1), family="cox", warm=F)  #  1 min 
@@ -107,4 +110,5 @@ W1=as.matrix(cbind(fit1$w1,fit2$w1))
 W2=as.matrix(cbind(fit1$w2,fit2$w2))
 preds2 = PredCVR(Ytest, X1test, X2test, eventtest, W1=W1, W2=W2, 
                  alpha = 0, beta = fit2$beta, Y=Y, X1=X1, X2=X2, event=event, family = "cox") # 0.747
-  
+
+
