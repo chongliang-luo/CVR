@@ -379,7 +379,8 @@ TuneCVR_seq <- function(Y, X1, X2, event=NULL, offsetk,
   if (is.null(Lamseq)) {
     if (is.null(nlam)) nlam <- 20
     lamseq <- 10^(seq(-2, 0.5, len = nlam)) # * 5
-    Lamseq <- cbind(lamseq, lamseq * p2 / p1)
+    ss = max(min(p2 / p1, 5), 0.2) # cap 0.2 and 5
+    Lamseq <- cbind(lamseq, lamseq * ss)
   } else {nlam = nrow(Lamseq)} 
   
   pred <- array(NA, c(neta, nlam, nfold))
